@@ -11,6 +11,10 @@
 
 - [x] Live in production at **https://vibe-and-pay.vercel.app**
 - [x] Vercel Pro plan, per-minute cron registered (`*/1 * * * *` → `/api/poll`)
+- [x] **GitHub repo connected** at
+  [miamiaisolutions/vibeandpay](https://github.com/miamiaisolutions/vibeandpay)
+  with Vercel git integration — `git push origin main` auto-deploys to
+  production; non-`main` branches get preview URLs
 - [x] Firestore rules + composite indexes (incl. collection-group on
   `northSessionToken`) deployed to `vibeandpay`
 - [x] All 17 production env vars set in Vercel (Anthropic, Firebase web +
