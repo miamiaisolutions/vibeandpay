@@ -10,7 +10,11 @@ export function Nav() {
   const isDark = theme === 'dark'
 
   return (
-    <header className="sticky top-0 z-50 border-b border-[var(--brand-border)]/40 bg-[var(--bg)]">
+    <header
+      className={`sticky top-0 z-50 border-b border-[var(--brand-border)]/40 ${
+        isDark ? 'bg-[#010214]' : 'bg-[var(--bg)]'
+      }`}
+    >
       <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-6">
         <Link href="/" className="flex items-center">
           <Image
