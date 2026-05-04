@@ -5,7 +5,7 @@ import remarkGfm from 'remark-gfm'
 
 export function Markdown({ children }: { children: string }) {
   return (
-    <div className="markdown text-sm leading-relaxed space-y-3">
+    <div className="markdown text-sm leading-relaxed space-y-3 text-[var(--text)]">
       <ReactMarkdown
         remarkPlugins={[remarkGfm]}
         components={{

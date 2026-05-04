@@ -388,7 +388,9 @@ function EmptyState({ onPick }: { onPick: (text: string) => void }) {
   return (
     <div className="max-w-2xl mx-auto pt-12 md:pt-24 text-center space-y-6">
       <div className="space-y-2">
-        <h1 className="text-3xl font-semibold">{t('emptyHeadline')}</h1>
+        <h1 className="text-3xl font-semibold text-[var(--text)]">
+          {t('emptyHeadline')}
+        </h1>
         <p className="text-sm text-[var(--text-muted)]">{t('emptyHint')}</p>
       </div>
       <div className="flex flex-col gap-2 max-w-md mx-auto">
@@ -399,7 +401,7 @@ function EmptyState({ onPick }: { onPick: (text: string) => void }) {
               key={key}
               type="button"
               onClick={() => onPick(text)}
-              className="text-left text-sm rounded-lg border border-[var(--brand-border)] bg-[var(--surface)] hover:bg-[var(--surface-elevated)] px-4 py-3 transition-colors"
+              className="text-left text-sm rounded-lg border border-[var(--brand-border)] bg-[var(--surface)] hover:bg-[var(--surface-elevated)] px-4 py-3 transition-colors text-[var(--text)]"
             >
               {text}
             </button>
@@ -444,8 +446,8 @@ function MessageBubble({
       <div
         className={
           isUser
-            ? 'max-w-[80%] rounded-2xl bg-[var(--surface-elevated)] px-4 py-2.5 text-sm'
-            : 'max-w-[90%] space-y-3'
+            ? 'max-w-[80%] rounded-2xl bg-[var(--surface-elevated)] px-4 py-2.5 text-sm text-[var(--text)]'
+            : 'max-w-[90%] space-y-3 text-[var(--text)]'
         }
       >
         {message.parts.map((part, i) => {

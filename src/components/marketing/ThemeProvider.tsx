@@ -18,7 +18,7 @@ const LIGHT: Record<string, string> = {
   '--surface': '#FFFFFF',
   '--surface-elevated': '#EBEBFF',
   '--text': '#0A0A1F',
-  '--text-muted': '#4A5175',
+  '--text-muted': '#3A4060',
   '--brand-border': '#D2CEEE',
 }
 
