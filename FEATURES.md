@@ -7,6 +7,74 @@
 > Status legend: `[x]` = built and verified, `[ ]` = not built yet.
 > Partial deliveries note what's missing in parentheses.
 
+## Deployment status
+
+- [x] Live in production at **https://vibe-and-pay.vercel.app**
+- [x] Vercel Pro plan, per-minute cron registered (`*/1 * * * *` → `/api/poll`)
+- [x] Firestore rules + composite indexes (incl. collection-group on
+  `northSessionToken`) deployed to `vibeandpay`
+- [x] All 17 production env vars set in Vercel (Anthropic, Firebase web +
+  admin, encryption key, Resend, cron secret, app URL, North dev fallback
+  trio)
+- [x] `firebase-admin` private-key handler tolerates both dotenv-stripped
+  and Vercel-quoted forms (was the source of an early prod 500)
+- [x] **AI SDK base URL pinned** in `src/lib/ai/client.ts` so it ignores the
+  `ANTHROPIC_BASE_URL` env var that Claude Code's local shell exports without
+  the `/v1` suffix (was causing a silent 404 against `api.anthropic.com/messages`)
+- [x] **Anthropic model upgraded to `claude-sonnet-4-6`** (the original
+  `claude-sonnet-4-5` was retired by Anthropic — calls 404'd)
+- [x] **Resend response error-handling**: SDK returns `{ error }` instead of
+  throwing on non-2xx; checkout / invoice / receipt routes now surface those
+  failures in the chat ("Link created — email failed; share <url>") instead
+  of falsely reporting success
+- [x] Embedded-checkout iframe height pinned to 760/820px via a `<style>`
+  rule on `#checkout-container iframe` with `!important` (descendant
+  selector — North wraps the iframe in its own divs, so a `>` direct-child
+  selector misses it; `!important` beats North's inline-style heights)
+- [x] **Pay page section restructured** so the embed spans the full card
+  width (the section's `p-6` padding was eating ~48px on mobile, squishing
+  North's form below its minimum width)
+- [x] **AI SDK v6 multi-step tool calling re-enabled** via
+  `stopWhen: isLoopFinished()` — v6 default is `stepCountIs(1)` which broke
+  chained tool calls (`getCustomers → createCheckout` would halt after the
+  first call with no confirmation card)
+- [x] Two real-email demo customers seeded for the `a.giron0817@gmail.com`
+  test account: **Alex Giron** (`a.giron0817@gmail.com`) and **Miami AI
+  Solutions** (`miamiaisolutions@gmail.com` — the Resend account inbox)
+- [x] **Polling captures full North status response** in
+  `metadata.northStatus` and probes 6 candidate field names for
+  `northTransactionId` (`transactionId`, `transId`, `tranId`, `paymentId`,
+  `orderId`, `id`) plus one level of nesting — North's response shape isn't
+  documented and the txn id wasn't being captured
+- [x] **Refund route falls back to local-only refund** when no
+  `northTransactionId` can be found anywhere (seeded demo data + real txs
+  where polling missed the field) — sets `metadata.refundedLocally: true`
+- [x] **Markdown rendering for assistant messages** via `react-markdown` +
+  `remark-gfm` — GFM tables, bold, bullets, code, and links styled to the
+  dark theme; user messages still use the existing `@`/`#` token highlighter
+- [x] **Sidebar overflow fix** — `AppSidebarBody` is constrained with
+  `w-full min-w-0 overflow-hidden` so long thread titles truncate inside
+  the 256px aside instead of bleeding past the right border
+- [x] **New chat button** generates a fresh UUID and pushes to
+  `/chat/[id]` so it works even when the user is already on `/chat`; the
+  `[threadId]` page treats a missing thread doc as an empty new chat
+  rather than a "not found" state
+- [x] **Tokenizer is email-aware** — `@` only highlights as a customer
+  mention when not preceded by an email-y character, so `test@gmail.com`
+  renders as plain text instead of a chopped-up mention
+- [x] **Customer triggers renamed to hyphenated form** — `#customer-add`
+  and `#customer-edit` so they render as one solid violet action token
+- [ ] North dashboard allowed-domains list updated to include
+  `https://vibe-and-pay.vercel.app` *(if the iframe stops mounting silently
+  during demo, this is the cause — Embedded Checkout Designer)*
+- [ ] Resend custom sending domain verified *(without it, customer emails
+  only deliver to `miamiaisolutions@gmail.com`; verified for dev demo, blocks
+  sending to anyone else)*
+- [ ] **Identify North's actual txn-id field name** — once a paid
+  transaction lands with the new metadata snapshot, inspect
+  `metadata.northStatus` in Firestore and add the field to `TX_ID_KEYS` in
+  `src/lib/north/extract.ts` so real refunds (not local-only) work
+
 ---
 
 ## Must Have (Golden Path)
@@ -34,16 +102,23 @@ The golden path is the *one demo flow* that must work flawlessly:
   status lines ("Reading the room…", "Crunching numbers…", "Drafting it up…")
 - [x] `@` autocomplete: filters customers by name / email / company,
   popover above the input, arrow-key + Enter selects
+- [x] `@` mentions are email-aware (won't fire mid-email-address)
 - [x] `#` autocomplete: lists the 8 available tools with one-line descriptions
+  (`#checkout`, `#invoice`, `#payment-link`, `#refund`, `#void`, `#report`,
+  `#customer-add`, `#customer-edit`)
 - [x] Auto-generated thread titles (Claude generates 3-5 word title after first
   response)
 - [ ] Suggested prompts on empty state with merchant's name personalized
   *(static prompts exist; merchant-name personalization pending)*
 - [x] Read tools execute without confirmation; write tools render rich
   confirmation card with editable fields + Confirm/Cancel
+- [x] Confirmation cards for `#checkout` and `#invoice` show a read-only
+  line-items list above the editable fields when Claude extracts items
 - [x] Live tool-call progress streamed inline (in-flight status per tool,
   e.g. "Looking up customers…", "Crunching numbers…", "Drafting checkout…",
   plus a ✓ confirmation pill when read tools finish)
+- [x] Assistant messages render markdown (GFM tables, bold, bullets, links)
+  via `react-markdown` + `remark-gfm`
 
 ### Tools (AI-callable, hashtag-triggered)
 - **Read (no confirmation):**
@@ -153,9 +228,16 @@ The golden path is the *one demo flow* that must work flawlessly:
 - [x] Footer with legal links *(Terms / Privacy / Security as placeholder `#` hrefs until pages exist)*
 
 ### Mobile
-- [ ] Responsive chat (input docked bottom, sidebar collapses to drawer)
-- [ ] Mobile-friendly `@` and `#` pickers (full-width on small screens)
-- [ ] Custom payment page mobile-first (most customers will pay from phones)
+- [x] Responsive chat: input docked at the bottom, sidebar collapses to a
+  drawer (hamburger top bar at `md:hidden` opens a `Sheet` containing the
+  same nav contents)
+- [x] Mobile-friendly `@` and `#` pickers — popover spans the input's full
+  width at any breakpoint, arrow-key + Enter selection works on touch
+  keyboards (Tab also accepts)
+- [x] Custom payment page mobile-first — `max-w-xl` centered card, 4px-stroke
+  brand-colored top border, embedded form scales to viewport width
+- [x] Customer + transaction tables wrap in `overflow-x-auto` with a sensible
+  `min-w` so they horizontal-scroll cleanly at sub-640px widths
 
 ---
 

@@ -5,6 +5,10 @@ import { getStatus, type NorthCredentials } from '@/lib/north/client'
 import { getMerchantCredentials } from '@/lib/north/credentials'
 import { getResend, FROM_ADDRESS } from '@/lib/email/client'
 import { PaymentReceipt } from '@/lib/email/templates/PaymentReceipt'
+import {
+  extractNorthTransactionId,
+  sanitizeForFirestore,
+} from '@/lib/north/extract'
 
 export const maxDuration = 60
 
@@ -135,8 +139,16 @@ export async function GET(req: NextRequest) {
         update.status = 'paid'
         update.paidAt = FieldValue.serverTimestamp()
         update.pollingActive = false
-        if (statusResult.transactionId) {
-          update.northTransactionId = statusResult.transactionId
+        const extractedTxId = extractNorthTransactionId(statusResult)
+        if (extractedTxId) {
+          update.northTransactionId = extractedTxId
+        }
+        // Snapshot the full North status response on the tx doc — lets us
+        // diagnose which field actually carries the transaction id and
+        // gives us a value to fall back on for refund/void.
+        update.metadata = {
+          ...(tx.metadata as Record<string, unknown> | undefined),
+          northStatus: sanitizeForFirestore(statusResult),
         }
       } else if (statusResult.status === 'Declined') {
         update.status = 'failed'
@@ -235,9 +247,18 @@ export async function GET(req: NextRequest) {
                 transactionId: txId,
               }),
             })
+            .then((result) => {
+              if (result?.error) {
+                console.error(
+                  '[receipt email] send failed for tx',
+                  doc.id,
+                  result.error.message ?? result.error,
+                )
+              }
+            })
             .catch((err: unknown) => {
               console.error(
-                '[receipt email] send failed for tx',
+                '[receipt email] send threw for tx',
                 doc.id,
                 err instanceof Error ? err.message : err,
               )

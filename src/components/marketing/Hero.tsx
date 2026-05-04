@@ -72,6 +72,10 @@ export function Hero() {
 
       await wait(HOLD_MS)
       if (cancelled) return
+
+      // Last scene — leave prompt and card visible; animation stops here.
+      if (idx === SCENES.length - 1) return
+
       setShowCard(false)
 
       await wait(FADE_MS)
@@ -86,7 +90,7 @@ export function Hero() {
       await wait(SCENE_GAP_MS)
       if (cancelled) return
 
-      runScene((idx + 1) % SCENES.length)
+      runScene(idx + 1)
     }
 
     runScene(0)
@@ -110,7 +114,7 @@ export function Hero() {
             </span>
           </div>
 
-          <h1 className="mt-5 text-5xl font-bold leading-[1.0] tracking-tight text-[var(--text)] sm:text-6xl lg:text-[4.25rem]">
+          <h1 className="mt-5 text-4xl font-bold leading-[1.0] tracking-tight text-[var(--text)] sm:text-5xl lg:text-[4.25rem]">
             Chat to
             <br />
             <span className="bg-gradient-to-r from-[var(--accent-purple)] via-[#A78BFA] to-[var(--accent-cyan)] bg-clip-text text-transparent">

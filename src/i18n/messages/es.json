@@ -1,0 +1,48 @@
+{
+  "Sidebar": {
+    "newChat": "Nuevo chat",
+    "recent": "Recientes",
+    "customers": "Clientes",
+    "transactions": "Transacciones",
+    "settings": "Configuración",
+    "signOut": "Cerrar sesión"
+  },
+  "Settings": {
+    "title": "Configuración",
+    "subtitle": "Conecta tu cuenta de North para que Vibe & Pay pueda enviar cobros en tu nombre. Las credenciales se cifran y nunca llegan al navegador.",
+    "businessSection": "Negocio",
+    "businessSubtitle": "Se muestra a tus clientes en la página de pago y en los correos de marca.",
+    "businessNameLabel": "Nombre del negocio",
+    "languageSection": "Idioma",
+    "languageSubtitle": "Idioma de la interfaz de Vibe & Pay y en el que Claude te responderá.",
+    "languageLabel": "Idioma de la interfaz",
+    "languageEnglish": "English",
+    "languageSpanish": "Español",
+    "credentialsSection": "Credenciales de North",
+    "credentialsSubtitle": "Desde tu panel de North. Las tres son necesarias para enviar un cobro.",
+    "credentialsSaved": "Credenciales guardadas y cifradas.",
+    "credentialsReplace": "Reemplazar",
+    "credentialsCancel": "Cancelar",
+    "saveChanges": "Guardar cambios",
+    "saving": "Guardando…",
+    "saved": "Guardado.",
+    "nothingToSave": "Nada que guardar."
+  },
+  "Chat": {
+    "emptyHeadline": "¿En qué te ayudo?",
+    "emptyHint": "Usa #checkout para cobrar a un cliente, @nombre para referenciarlo. Prueba uno de estos:",
+    "placeholder": "Envía un cobro, redacta una factura, haz una pregunta…",
+    "send": "Enviar",
+    "suggestion1": "Envíale un cobro a George por $300",
+    "suggestion2": "¿Cuánto facturé este mes?",
+    "suggestion3": "Muéstrame las facturas vencidas",
+    "toolCheckout": "Enviar un cobro único",
+    "toolInvoice": "Enviar una factura con fecha de vencimiento",
+    "toolPaymentLink": "Generar un enlace reutilizable",
+    "toolRefund": "Reembolsar una transacción pasada",
+    "toolVoid": "Anular una transacción pendiente",
+    "toolReport": "Estadísticas agregadas por período",
+    "toolCustomerAdd": "Crear un nuevo cliente",
+    "toolCustomerEdit": "Editar un cliente existente"
+  }
+}

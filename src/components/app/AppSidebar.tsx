@@ -78,7 +78,7 @@ export function AppSidebarBody({ user, onNavigate }: BodyProps) {
   }
 
   return (
-    <div className="flex h-full flex-col">
+    <div className="flex h-full w-full min-w-0 flex-col overflow-hidden">
       <div className="flex items-center justify-between gap-3 px-4 py-3 border-b border-[var(--brand-border)]">
         <Link href="/chat" className="flex items-center" onClick={onNavigate}>
           <Image
@@ -94,9 +94,16 @@ export function AppSidebarBody({ user, onNavigate }: BodyProps) {
       </div>
 
       <div className="px-3 py-3">
-        <Link
-          href="/chat"
-          onClick={onNavigate}
+        <button
+          type="button"
+          onClick={() => {
+            onNavigate?.()
+            const id =
+              typeof crypto !== 'undefined' && 'randomUUID' in crypto
+                ? crypto.randomUUID()
+                : Math.random().toString(36).slice(2) + Date.now().toString(36)
+            router.push(`/chat/${id}`)
+          }}
           className={cn(
             buttonVariants({ size: 'sm' }),
             'w-full justify-start gap-2',
@@ -104,7 +111,7 @@ export function AppSidebarBody({ user, onNavigate }: BodyProps) {
         >
           <Plus className="h-4 w-4" />
           {t('newChat')}
-        </Link>
+        </button>
       </div>
 
       <div className="flex-1 min-h-0 overflow-y-auto px-2 pb-2">
@@ -124,7 +131,7 @@ export function AppSidebarBody({ user, onNavigate }: BodyProps) {
                     href={`/chat/${thread.id}`}
                     onClick={onNavigate}
                     className={cn(
-                      'flex items-center gap-2 px-2 py-1.5 rounded-md text-sm transition-colors',
+                      'flex items-center gap-2 px-2 py-1.5 rounded-md text-sm transition-colors min-w-0',
                       active
                         ? 'bg-[var(--surface-elevated)] text-[var(--text)]'
                         : 'text-[var(--text-muted)] hover:bg-[var(--surface-elevated)] hover:text-[var(--text)]',
@@ -132,7 +139,7 @@ export function AppSidebarBody({ user, onNavigate }: BodyProps) {
                     title={display}
                   >
                     <MessageSquare className="h-3.5 w-3.5 shrink-0 opacity-60" />
-                    <span className="truncate">{display}</span>
+                    <span className="truncate flex-1 min-w-0">{display}</span>
                   </Link>
                 )
               })}

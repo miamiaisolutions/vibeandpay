@@ -59,7 +59,8 @@ type ShootingStar = {
   dir: 'in' | 'cruise' | 'out'
 }
 
-const STAR_COUNT = 280
+const STAR_COUNT_DESKTOP = 280
+const STAR_COUNT_MOBILE = 140  // cap on narrow viewports to spare mobile CPU
 const HUB_FRACTION = 0.28
 const MAX_CONNECTION_DIST = 230
 const CONNECTIONS_PER_HUB = 2
@@ -68,8 +69,8 @@ const PARALLAX_EASE = 0.05
 const GLOBAL_DRIFT_X = 0.06     // px/frame at depth=1 — coherent "moving through space"
 const GLOBAL_DRIFT_Y = 0.025
 
-function makeStars(w: number, h: number): Star[] {
-  const stars = Array.from({ length: STAR_COUNT }, () => {
+function makeStars(w: number, h: number, count: number): Star[] {
+  const stars = Array.from({ length: count }, () => {
     const depth = Math.pow(Math.random(), 0.5) * 0.88 + 0.12
     const r = Math.max(0.4, depth * 2.3)
     const color = STAR_COLORS[Math.floor(Math.random() * STAR_COLORS.length)]
@@ -95,7 +96,7 @@ function makeStars(w: number, h: number): Star[] {
   const candidates = stars
     .map((s, i) => ({ i, score: s.depth * 0.7 + s.r * 0.3 }))
     .sort((a, b) => b.score - a.score)
-  const hubCount = Math.floor(STAR_COUNT * HUB_FRACTION)
+  const hubCount = Math.floor(count * HUB_FRACTION)
   for (let k = 0; k < hubCount; k++) stars[candidates[k].i].isHub = true
 
   return stars
@@ -178,7 +179,8 @@ function StarfieldCanvas() {
       canvas.style.width = `${w}px`
       canvas.style.height = `${h}px`
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
-      stars = makeStars(w, h)
+      const starCount = w < 640 ? STAR_COUNT_MOBILE : STAR_COUNT_DESKTOP
+      stars = makeStars(w, h, starCount)
       connections = buildConnections(stars)
       pulses.length = 0
     }
@@ -392,15 +394,26 @@ function StarfieldCanvas() {
       raf = requestAnimationFrame(tick)
     }
 
+    const onVisibilityChange = () => {
+      if (document.hidden) {
+        cancelAnimationFrame(raf)
+      } else {
+        last = performance.now()
+        raf = requestAnimationFrame(tick)
+      }
+    }
+
     resize()
     raf = requestAnimationFrame(tick)
     window.addEventListener('resize', resize, { passive: true })
     window.addEventListener('mousemove', onMouseMove, { passive: true })
+    document.addEventListener('visibilitychange', onVisibilityChange)
 
     return () => {
       cancelAnimationFrame(raf)
       window.removeEventListener('resize', resize)
       window.removeEventListener('mousemove', onMouseMove)
+      document.removeEventListener('visibilitychange', onVisibilityChange)
     }
   }, [])
 

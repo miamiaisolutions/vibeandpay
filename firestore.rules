@@ -1,0 +1,22 @@
+rules_version = '2';
+
+// Vibe & Pay — Firestore security rules.
+// Everything merchant-scoped lives under /merchants/{uid}, so the rule is:
+// a signed-in user can read and write only their own subtree.
+//
+// /pay/[token] is a public payment landing page, but the page is a server
+// component that uses the Firebase Admin SDK — Admin bypasses these rules.
+// We therefore do NOT grant unauthenticated read on transactions; that would
+// leak every merchant's session tokens to anyone who can guess them.
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /merchants/{uid} {
+      allow read, write: if request.auth != null && request.auth.uid == uid;
+
+      match /{document=**} {
+        allow read, write: if request.auth != null && request.auth.uid == uid;
+      }
+    }
+  }
+}

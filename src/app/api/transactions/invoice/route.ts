@@ -157,7 +157,7 @@ export async function POST(req: NextRequest) {
   let emailSent = true
   let emailError: string | null = null
   try {
-    await getResend().emails.send({
+    const result = await getResend().emails.send({
       from: FROM_ADDRESS,
       to: data.customerEmail,
       subject,
@@ -173,10 +173,15 @@ export async function POST(req: NextRequest) {
         paymentUrl,
       }),
     })
+    if (result?.error) {
+      emailSent = false
+      emailError = result.error.message ?? 'Resend rejected the send'
+      console.error('[invoice email] send failed:', emailError)
+    }
   } catch (err) {
     emailSent = false
     emailError = err instanceof Error ? err.message : 'Unknown email error'
-    console.error('[invoice email] send failed:', emailError)
+    console.error('[invoice email] send threw:', emailError)
   }
 
   return NextResponse.json({

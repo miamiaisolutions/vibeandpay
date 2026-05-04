@@ -33,8 +33,30 @@ yarn-error.log*
 # env files (can opt-in for committing if needed)
 .env*
 
+# Firebase
+firebase-service-account.json
+.firebase/
+
+# Claude Code local + audit (settings.json IS committed)
+.claude/settings.local.json
+.claude/audit.log
+.claude/worktrees/
+
+# OS / editor
+.DS_Store
+.idea/
+.vscode/
+
+# Local diagnostic / one-off scripts
+inspect-*.mjs
+probe-*.mjs
+test-*.mjs
+
 # vercel
 .vercel
+
+# North reference sample — kept locally for guidance, not part of our app
+/North-EC-Sample-JS-main/
 
 # typescript
 *.tsbuildinfo

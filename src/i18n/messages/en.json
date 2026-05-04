@@ -1,0 +1,48 @@
+{
+  "Sidebar": {
+    "newChat": "New chat",
+    "recent": "Recent",
+    "customers": "Customers",
+    "transactions": "Transactions",
+    "settings": "Settings",
+    "signOut": "Sign out"
+  },
+  "Settings": {
+    "title": "Settings",
+    "subtitle": "Connect your North merchant account so Vibe & Pay can send checkouts on your behalf. Credentials are encrypted at rest and never sent to the browser.",
+    "businessSection": "Business",
+    "businessSubtitle": "Shown to your customers on the payment landing page and in branded emails.",
+    "businessNameLabel": "Business name",
+    "languageSection": "Language",
+    "languageSubtitle": "Vibe & Pay's interface language and the language Claude uses when replying to you.",
+    "languageLabel": "Interface language",
+    "languageEnglish": "English",
+    "languageSpanish": "Español",
+    "credentialsSection": "North credentials",
+    "credentialsSubtitle": "From your North dashboard. All three are required to send a checkout.",
+    "credentialsSaved": "Credentials are saved and encrypted.",
+    "credentialsReplace": "Replace",
+    "credentialsCancel": "Cancel",
+    "saveChanges": "Save changes",
+    "saving": "Saving…",
+    "saved": "Saved.",
+    "nothingToSave": "Nothing to save."
+  },
+  "Chat": {
+    "emptyHeadline": "What can I help with?",
+    "emptyHint": "Use #checkout to charge a customer, @name to reference one. Try one of these:",
+    "placeholder": "Send a checkout, draft an invoice, ask a question…",
+    "send": "Send",
+    "suggestion1": "Send a checkout to George for $300",
+    "suggestion2": "How much did I make this month?",
+    "suggestion3": "Show me overdue invoices",
+    "toolCheckout": "Send a one-time payment link",
+    "toolInvoice": "Send an invoice with a due date",
+    "toolPaymentLink": "Generate a reusable URL",
+    "toolRefund": "Refund a past transaction",
+    "toolVoid": "Void a pending transaction",
+    "toolReport": "Aggregate stats for a period",
+    "toolCustomerAdd": "Create a new customer",
+    "toolCustomerEdit": "Update an existing customer"
+  }
+}
