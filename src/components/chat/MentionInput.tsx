@@ -18,7 +18,7 @@ import {
   query,
   type Timestamp,
 } from 'firebase/firestore'
-import { Hash, AtSign } from 'lucide-react'
+import { Hash, AtSign, Package } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 import { auth, db } from '@/lib/firebase/client'
 import { Textarea } from '@/components/ui/textarea'
@@ -32,6 +32,14 @@ type CustomerOption = {
   company: string | null
 }
 
+type ProductOption = {
+  id: string
+  name: string
+  sku: string
+  price: number
+  type: 'service' | 'physical'
+}
+
 const TOOL_DEFS: Array<{ id: string; trigger: string; descriptionKey: string }> = [
   { id: 'checkout', trigger: '#checkout', descriptionKey: 'toolCheckout' },
   { id: 'invoice', trigger: '#invoice', descriptionKey: 'toolInvoice' },
@@ -39,16 +47,19 @@ const TOOL_DEFS: Array<{ id: string; trigger: string; descriptionKey: string }> 
   { id: 'refund', trigger: '#refund', descriptionKey: 'toolRefund' },
   { id: 'void', trigger: '#void', descriptionKey: 'toolVoid' },
   { id: 'report', trigger: '#report', descriptionKey: 'toolReport' },
+  { id: 'products', trigger: '#products', descriptionKey: 'toolProducts' },
+  { id: 'product-add', trigger: '#product-add', descriptionKey: 'toolProductAdd' },
+  { id: 'product-edit', trigger: '#product-edit', descriptionKey: 'toolProductEdit' },
   { id: 'customer-add', trigger: '#customer-add', descriptionKey: 'toolCustomerAdd' },
   { id: 'customer-edit', trigger: '#customer-edit', descriptionKey: 'toolCustomerEdit' },
 ]
 
-type PickerKind = '@' | '#'
+type PickerKind = '@' | '#' | '&'
 type PickerState = {
   open: boolean
   kind: PickerKind | null
   query: string
-  triggerStart: number // index in `value` where the @ or # sits
+  triggerStart: number // index in `value` where the @, #, or & sits
   selectedIdx: number
 }
 
@@ -82,6 +93,7 @@ export const MentionInput = forwardRef<MentionInputHandle, Props>(
     const [picker, setPicker] = useState<PickerState>(CLOSED)
     const [user, setUser] = useState<User | null>(auth.currentUser)
     const [customers, setCustomers] = useState<CustomerOption[]>([])
+    const [products, setProducts] = useState<ProductOption[]>([])
     const t = useTranslations('Chat')
     const toolOptions = useMemo(
       () =>
@@ -126,9 +138,33 @@ export const MentionInput = forwardRef<MentionInputHandle, Props>(
             }),
           )
         },
-        () => {
-          /* swallow — picker just won't show suggestions */
+        () => { /* swallow */ },
+      )
+    }, [user])
+
+    useEffect(() => {
+      if (!user) return
+      const q = query(
+        collection(db, 'merchants', user.uid, 'products'),
+        orderBy('createdAt', 'desc'),
+      )
+      return onSnapshot(
+        q,
+        (snap) => {
+          setProducts(
+            snap.docs.map((d) => {
+              const data = d.data() as Record<string, unknown>
+              return {
+                id: d.id,
+                name: String(data.name ?? ''),
+                sku: String(data.sku ?? ''),
+                price: Number(data.price ?? 0),
+                type: (data.type as 'service' | 'physical') ?? 'service',
+              }
+            }),
+          )
         },
+        () => { /* swallow */ },
       )
     }, [user])
 
@@ -153,6 +189,20 @@ export const MentionInput = forwardRef<MentionInputHandle, Props>(
           secondary: c.company || c.email,
         }))
       }
+      if (picker.kind === '&') {
+        const matches = products.filter((p) => {
+          if (!lc) return true
+          return (
+            p.name.toLowerCase().includes(lc) ||
+            p.sku.toLowerCase().includes(lc)
+          )
+        })
+        return matches.slice(0, 6).map((p) => ({
+          id: p.id,
+          primary: p.name,
+          secondary: `$${p.price.toFixed(2)} · ${p.type}`,
+        }))
+      }
       // #
       const matches = toolOptions.filter((t) => {
         if (!lc) return true
@@ -161,21 +211,21 @@ export const MentionInput = forwardRef<MentionInputHandle, Props>(
           t.description.toLowerCase().includes(lc)
         )
       })
-      return matches.slice(0, 6).map((t) => ({
+      return matches.slice(0, 8).map((t) => ({
         id: t.id,
         primary: t.trigger,
         secondary: t.description,
       }))
-    }, [picker, customers, toolOptions])
+    }, [picker, customers, products, toolOptions])
 
     function detectPicker(text: string, cursor: number): PickerState {
-      // Walk backwards from cursor looking for @ or # not preceded by a word char
+      // Walk backwards from cursor looking for @, #, or & not preceded by a word char
       let i = cursor - 1
       let kind: PickerKind | null = null
       let triggerStart = -1
       while (i >= 0) {
         const ch = text[i]
-        if (ch === '@' || ch === '#') {
+        if (ch === '@' || ch === '#' || ch === '&') {
           const prev = i > 0 ? text[i - 1] : ' '
           if (!/\w/.test(prev)) {
             kind = ch as PickerKind
@@ -190,9 +240,9 @@ export const MentionInput = forwardRef<MentionInputHandle, Props>(
       }
       if (!kind) return CLOSED
       const query = text.slice(triggerStart + 1, cursor)
-      // For '#customer' multi-word triggers we still want to keep the picker
-      // open while the user types ' add' / ' edit'; only break on a 2nd space
-      if (kind === '@' && /\s/.test(query)) return CLOSED
+      // @ and & only stay open for single-word queries
+      if ((kind === '@' || kind === '&') && /\s/.test(query)) return CLOSED
+      // # allows multi-word (e.g. #customer-add) but breaks on 2+ spaces
       if (kind === '#' && query.split(/\s+/).length > 2) return CLOSED
       return {
         open: true,
@@ -254,6 +304,8 @@ export const MentionInput = forwardRef<MentionInputHandle, Props>(
       let insertion: string
       if (picker.kind === '@') {
         insertion = `@${option.primary} `
+      } else if (picker.kind === '&') {
+        insertion = `&${option.primary} `
       } else {
         // option.primary already includes the leading '#'
         insertion = `${option.primary} `
@@ -269,6 +321,9 @@ export const MentionInput = forwardRef<MentionInputHandle, Props>(
       })
     }
 
+    const pickerLabel =
+      picker.kind === '@' ? 'Customers' : picker.kind === '&' ? 'Products' : 'Tools'
+
     return (
       <div className="relative w-full">
         {picker.open && filtered.length > 0 && (
@@ -276,11 +331,13 @@ export const MentionInput = forwardRef<MentionInputHandle, Props>(
             <div className="px-3 py-2 border-b border-[var(--brand-border)] flex items-center gap-2 text-xs text-[var(--text-muted)]">
               {picker.kind === '@' ? (
                 <AtSign className="h-3 w-3" />
+              ) : picker.kind === '&' ? (
+                <Package className="h-3 w-3" />
               ) : (
                 <Hash className="h-3 w-3" />
               )}
               <span>
-                {picker.kind === '@' ? 'Customers' : 'Tools'}
+                {pickerLabel}
                 {picker.query ? ` matching "${picker.query}"` : ''}
               </span>
             </div>
@@ -343,6 +400,13 @@ export const MentionInput = forwardRef<MentionInputHandle, Props>(
             if (tok.type === 'mention') {
               return (
                 <span key={i} className="font-bold text-cyan-400">
+                  {tok.text}
+                </span>
+              )
+            }
+            if (tok.type === 'product') {
+              return (
+                <span key={i} className="font-bold text-amber-400">
                   {tok.text}
                 </span>
               )

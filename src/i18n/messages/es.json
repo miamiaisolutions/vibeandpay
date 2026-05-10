@@ -4,6 +4,7 @@
     "recent": "Recientes",
     "customers": "Clientes",
     "transactions": "Transacciones",
+    "products": "Productos",
     "settings": "Configuración",
     "signOut": "Cerrar sesión"
   },
@@ -42,6 +43,9 @@
     "toolRefund": "Reembolsar una transacción pasada",
     "toolVoid": "Anular una transacción pendiente",
     "toolReport": "Estadísticas agregadas por período",
+    "toolProducts": "Ver todos los productos del catálogo",
+    "toolProductAdd": "Agregar un producto al catálogo",
+    "toolProductEdit": "Editar un producto existente",
     "toolCustomerAdd": "Crear un nuevo cliente",
     "toolCustomerEdit": "Editar un cliente existente"
   }

@@ -194,6 +194,21 @@ The golden path is the *one demo flow* that must work flawlessly:
 - [x] Stop polling after 24 hours per transaction (`pollingActive: false`,
   status flips to `expired` if it was still `sent`/`viewed`)
 
+### Products
+- [x] `/products` — table with search, Name/SKU/Price/Type columns
+- [x] "Add product" button → modal with inline form (name, SKU optional, price, type, description)
+- [x] "Seed sample products" button on empty state → seeds 6 demo products
+- [x] `merchants/{uid}/products` Firestore subcollection (auto-scoped by existing rules)
+- [x] AI read tools: `getProducts({ query? })`, `getProduct({ productId })`
+- [x] AI write tools: `addProduct`, `updateProduct` (both use confirmation card pattern)
+- [x] `#products` hashtag in `#` autocomplete — lists catalog
+- [x] `#product-add` / `#product-edit` hashtags for write operations
+- [x] `&Product Name` token in chat input — amber highlight, `&` picker popover shows catalog
+- [x] System prompt updated: `&mention` auto-fills line items on checkouts/invoices
+- [x] Demo seeding includes 6 products (Logo Design, Brand Guidelines, Monthly Retainer,
+  Website Audit, Social Media Pack, Printed Brochure)
+- [x] i18n: `products` key added to Sidebar, tool descriptions added to Chat (en + es)
+
 ### Settings
 - [x] Business name
 - [ ] Logo upload (Vercel Blob)

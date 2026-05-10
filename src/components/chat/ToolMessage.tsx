@@ -17,6 +17,8 @@ const INFLIGHT: Record<string, string> = {
   'tool-getTransactions': 'Pulling transactions…',
   'tool-getTransaction': 'Pulling that transaction…',
   'tool-getReport': 'Crunching numbers…',
+  'tool-getProducts': 'Looking up products…',
+  'tool-getProduct': 'Pulling that product…',
   'tool-createCheckout': 'Drafting checkout…',
   'tool-createInvoice': 'Drafting invoice…',
   'tool-createPaymentLink': 'Drafting payment link…',
@@ -24,6 +26,8 @@ const INFLIGHT: Record<string, string> = {
   'tool-updateCustomer': 'Drafting customer edit…',
   'tool-refundTransaction': 'Drafting refund…',
   'tool-voidTransaction': 'Drafting void…',
+  'tool-addProduct': 'Drafting product…',
+  'tool-updateProduct': 'Drafting product edit…',
 }
 
 const READ_TOOLS = new Set([
@@ -32,6 +36,8 @@ const READ_TOOLS = new Set([
   'tool-getTransactions',
   'tool-getTransaction',
   'tool-getReport',
+  'tool-getProducts',
+  'tool-getProduct',
 ])
 
 const COMPLETED: Record<string, string> = {
@@ -40,6 +46,8 @@ const COMPLETED: Record<string, string> = {
   'tool-getTransactions': 'Looked up transactions',
   'tool-getTransaction': 'Found',
   'tool-getReport': 'Crunched the numbers',
+  'tool-getProducts': 'Found products',
+  'tool-getProduct': 'Found',
 }
 
 function formatCurrency(value: number): string {
@@ -133,6 +141,26 @@ type VoidOutput = {
   found: boolean
 }
 
+type AddProductOutput = {
+  type: 'addProduct'
+  data: {
+    name: string
+    sku: string
+    price: number
+    type: 'service' | 'physical'
+    description: string
+  }
+}
+
+type UpdateProductOutput = {
+  type: 'updateProduct'
+  data: {
+    productId: string
+    productName: string
+    diff: Array<{ field: string; before: unknown; after: unknown }>
+  }
+}
+
 export type WriteToolOutput =
   | CheckoutOutput
   | InvoiceOutput
@@ -141,6 +169,8 @@ export type WriteToolOutput =
   | UpdateCustomerOutput
   | RefundOutput
   | VoidOutput
+  | AddProductOutput
+  | UpdateProductOutput
 
 type CardConfig = {
   title: string
@@ -274,6 +304,49 @@ function buildCardConfig(output: WriteToolOutput): CardConfig {
         confirmLabel: 'Void',
       }
     }
+    case 'addProduct': {
+      const d = output.data
+      return {
+        title: `Add product — ${d.name}`,
+        summary: `${formatCurrency(d.price)} · ${d.type}${d.sku ? ` · ${d.sku}` : ''}`,
+        fields: [
+          { label: 'Name', name: 'name', type: 'text', editable: true, value: d.name },
+          { label: 'SKU', name: 'sku', type: 'text', editable: true, value: d.sku },
+          { label: 'Price', name: 'price', type: 'currency', editable: true, value: d.price },
+          {
+            label: 'Type',
+            name: 'type',
+            type: 'select',
+            editable: true,
+            value: d.type,
+            options: [
+              { label: 'Service', value: 'service' },
+              { label: 'Physical', value: 'physical' },
+            ],
+          },
+          { label: 'Description', name: 'description', type: 'textarea', editable: true, value: d.description },
+        ],
+        confirmLabel: 'Add product',
+      }
+    }
+    case 'updateProduct': {
+      const d = output.data
+      const summaryParts = d.diff.map(
+        (e) => `${e.field}: ${String(e.before ?? '—')} → ${String(e.after ?? '—')}`,
+      )
+      return {
+        title: `Update ${d.productName || 'product'}`,
+        summary: summaryParts.length > 0 ? summaryParts.join(', ') : 'No changes detected.',
+        fields: d.diff.map((entry) => ({
+          label: entry.field,
+          name: entry.field,
+          type: 'text' as const,
+          editable: true,
+          value: entry.after === null || entry.after === undefined ? '' : String(entry.after),
+        })),
+        confirmLabel: 'Save changes',
+      }
+    }
   }
 }
 
@@ -340,6 +413,14 @@ export function ToolMessage({ part, confirmState, onConfirm, onCancel }: Props) 
       return (
         <div className="text-xs text-[var(--text-muted)]">
           ✓ {output.data.customerName} — nothing to change
+        </div>
+      )
+    }
+    // Special case: updateProduct with empty diff
+    if (output.type === 'updateProduct' && output.data.diff.length === 0) {
+      return (
+        <div className="text-xs text-[var(--text-muted)]">
+          ✓ {output.data.productName} — nothing to change
         </div>
       )
     }

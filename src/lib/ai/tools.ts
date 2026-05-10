@@ -154,6 +154,41 @@ const VoidTransactionInput = z.object({
   reason: z.string().optional(),
 })
 
+const GetProductsInput = z.object({
+  query: z
+    .string()
+    .optional()
+    .describe('Optional substring filter — matches against name or SKU (case-insensitive).'),
+})
+
+const GetProductInput = z.object({
+  productId: z.string().describe('The Firestore product doc ID.'),
+})
+
+const AddProductInput = z.object({
+  name: z.string().min(1).max(120),
+  sku: z
+    .string()
+    .max(60)
+    .optional()
+    .nullable()
+    .describe('Optional short identifier. Auto-generated from name if omitted.'),
+  price: z.number().positive().describe('Price in dollars, e.g. 250 for $250.'),
+  type: z.enum(['service', 'physical']).describe('Whether this is a service or a physical product.'),
+  description: z.string().max(500).optional(),
+})
+
+const UpdateProductInput = z.object({
+  productId: z
+    .string()
+    .describe('Required. Look up the product first via getProducts if referred to by name.'),
+  name: z.string().min(1).max(120).optional(),
+  sku: z.string().max(60).optional().nullable(),
+  price: z.number().positive().optional(),
+  type: z.enum(['service', 'physical']).optional(),
+  description: z.string().max(500).optional(),
+})
+
 // =============================================================================
 // Result types — chat UI discriminates on `type` for the right card render
 // =============================================================================
@@ -238,6 +273,26 @@ export type VoidTransactionResult = {
   found: boolean
 }
 
+export type AddProductResult = {
+  type: 'addProduct'
+  data: {
+    name: string
+    sku: string
+    price: number
+    type: 'service' | 'physical'
+    description: string
+  }
+}
+
+export type UpdateProductResult = {
+  type: 'updateProduct'
+  data: {
+    productId: string
+    productName: string
+    diff: Array<{ field: string; before: unknown; after: unknown }>
+  }
+}
+
 // =============================================================================
 // Helpers
 // =============================================================================
@@ -280,6 +335,10 @@ async function findCustomerByName(uid: string, name: string) {
   return match
     ? { id: match.id, data: match.data() as Record<string, unknown> }
     : null
+}
+
+function slugify(name: string): string {
+  return name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')
 }
 
 function periodWindowMs(period: 'today' | 'week' | 'month'): number {
@@ -683,6 +742,102 @@ export function makeTools(uid: string): ToolSet {
           data: {
             customerId: input.customerId,
             customerName: String(before.name ?? ''),
+            diff,
+          },
+        }
+      },
+    }),
+
+    // -------- PRODUCT READ TOOLS --------
+
+    getProducts: tool({
+      description:
+        'List the merchant\'s products, optionally filtered by name or SKU. Use this when the merchant asks "what products do I have", "show my catalog", or before referencing a &product in a checkout or invoice.',
+      inputSchema: GetProductsInput,
+      execute: async ({ query }) => {
+        const snap = await merchantRef.collection('products').limit(200).get()
+        type Row = Record<string, unknown> & { productId: string }
+        const all: Row[] = snap.docs.map((doc) => ({
+          productId: doc.id,
+          ...serialize(doc.data() as Record<string, unknown>),
+        }))
+        if (!query) return { products: all.slice(0, 20), total: all.length }
+        const lc = query.toLowerCase()
+        const matches = all.filter((p) => {
+          return (
+            String(p.name ?? '').toLowerCase().includes(lc) ||
+            String(p.sku ?? '').toLowerCase().includes(lc)
+          )
+        })
+        return { products: matches.slice(0, 20), total: matches.length }
+      },
+    }),
+
+    getProduct: tool({
+      description: 'Fetch a single product by ID.',
+      inputSchema: GetProductInput,
+      execute: async ({ productId }) => {
+        const snap = await merchantRef.collection('products').doc(productId).get()
+        if (!snap.exists) return { error: 'Product not found' }
+        return {
+          product: {
+            productId,
+            ...serialize(snap.data() as Record<string, unknown>),
+          },
+        }
+      },
+    }),
+
+    // -------- PRODUCT WRITE TOOLS --------
+
+    addProduct: tool({
+      description:
+        'Propose adding a new product to the catalog (#product-add). Returns a confirmation-card payload pre-filled with what the merchant said.',
+      inputSchema: AddProductInput,
+      execute: async (input): Promise<AddProductResult> => ({
+        type: 'addProduct',
+        data: {
+          name: input.name,
+          sku: input.sku ?? slugify(input.name),
+          price: input.price,
+          type: input.type,
+          description: input.description ?? '',
+        },
+      }),
+    }),
+
+    updateProduct: tool({
+      description:
+        'Propose editing an existing product (#product-edit). Required: productId (look it up first via getProducts). Returns a confirmation-card payload with the diff of changed fields.',
+      inputSchema: UpdateProductInput,
+      execute: async (input): Promise<UpdateProductResult> => {
+        const pSnap = await merchantRef.collection('products').doc(input.productId).get()
+        if (!pSnap.exists) {
+          return {
+            type: 'updateProduct',
+            data: {
+              productId: input.productId,
+              productName: '(not found)',
+              diff: [],
+            },
+          }
+        }
+        const before = pSnap.data() ?? {}
+        const diff: UpdateProductResult['data']['diff'] = []
+        const fields = ['name', 'sku', 'price', 'type', 'description'] as const
+        for (const f of fields) {
+          if (input[f] === undefined) continue
+          const prev = before[f] ?? null
+          const next = (input[f] as unknown) ?? null
+          if (prev !== next) {
+            diff.push({ field: f, before: prev, after: next })
+          }
+        }
+        return {
+          type: 'updateProduct',
+          data: {
+            productId: input.productId,
+            productName: String(before.name ?? ''),
             diff,
           },
         }

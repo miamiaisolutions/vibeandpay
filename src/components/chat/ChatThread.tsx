@@ -258,6 +258,30 @@ export function ChatThread({ threadId, initialMessages = [] }: Props) {
             `Voided ${output.data.customerName}'s pending ${formatCurrency(output.data.amount)}`
           break
         }
+        case 'addProduct': {
+          url = '/api/products'
+          body = {
+            name: String(edited.name ?? output.data.name),
+            sku: String(edited.sku ?? output.data.sku) || undefined,
+            price: Number(edited.price ?? output.data.price),
+            type: String(edited.type ?? output.data.type),
+            description: String(edited.description ?? output.data.description),
+          }
+          successMessage = () => `Added ${output.data.name} to your catalog`
+          break
+        }
+        case 'updateProduct': {
+          url = `/api/products/${output.data.productId}`
+          method = 'PATCH'
+          const productPatch: Record<string, unknown> = {}
+          for (const entry of output.data.diff) {
+            const next = edited[entry.field]
+            productPatch[entry.field] = next ?? entry.after
+          }
+          body = productPatch
+          successMessage = () => `Updated ${output.data.productName}`
+          break
+        }
       }
 
       const res = await fetch(url, {
@@ -466,6 +490,13 @@ function MessageBubble({
                     if (tok.type === 'mention') {
                       return (
                         <span key={j} className="font-bold text-cyan-400">
+                          {tok.text}
+                        </span>
+                      )
+                    }
+                    if (tok.type === 'product') {
+                      return (
+                        <span key={j} className="font-bold text-amber-400">
                           {tok.text}
                         </span>
                       )

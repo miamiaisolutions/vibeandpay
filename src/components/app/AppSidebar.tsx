@@ -13,7 +13,7 @@ import {
   query,
   type Timestamp,
 } from 'firebase/firestore'
-import { Users, Receipt, Settings, LogOut, Plus, MessageSquare } from 'lucide-react'
+import { Users, Receipt, Settings, LogOut, Plus, MessageSquare, Package } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 import { auth, db } from '@/lib/firebase/client'
 import { buttonVariants } from '@/components/ui/button'
@@ -24,6 +24,7 @@ import { ThemeToggle } from '@/components/marketing/ThemeToggle'
 const SECONDARY_NAV = [
   { href: '/customers', key: 'customers', icon: Users },
   { href: '/transactions', key: 'transactions', icon: Receipt },
+  { href: '/products', key: 'products', icon: Package },
   { href: '/settings', key: 'settings', icon: Settings },
 ] as const
 

@@ -1,22 +1,22 @@
-export type Token = { text: string; type: 'action' | 'mention' | 'plain' }
+export type Token = { text: string; type: 'action' | 'mention' | 'product' | 'plain' }
 
 /**
  * Splits a chat string into styled tokens.
  *  #checkout  → action  (violet)
  *  @Miami AI Solutions → mention (cyan)
+ *  &Logo Package       → product (amber)
  *  everything else     → plain
  *
- * Mention heuristic: @ followed by one or more words where
- * continuation words start with an uppercase letter, matching
- * how the picker inserts proper-cased business/customer names.
+ * Mention/product heuristic: @ or & followed by one or more words where
+ * continuation words start with an uppercase letter, matching how the
+ * picker inserts proper-cased names.
  */
 export function tokenizeText(input: string): Token[] {
   const tokens: Token[] = []
-  // The @ form only counts as a mention when it's at the start of a word —
-  // i.e. preceded by whitespace, start-of-string, or punctuation. The
-  // negative lookbehind keeps email-address local parts ("test@gmail.com")
-  // from being chopped up as mentions.
-  const regex = /(#\S+|(?<![A-Za-z0-9._%+-])@[A-Za-z0-9][A-Za-z0-9]*(?:\s[A-Z][A-Za-z0-9]*)*)/g
+  // # — any non-whitespace run after #
+  // @ — customer mention (not inside email addresses)
+  // & — product mention (same shape as @mention)
+  const regex = /(#\S+|(?<![A-Za-z0-9._%+-])@[A-Za-z0-9][A-Za-z0-9]*(?:\s[A-Z][A-Za-z0-9]*)*|(?<![A-Za-z0-9])&[A-Za-z0-9][A-Za-z0-9]*(?:\s[A-Z][A-Za-z0-9]*)*)/g
   let last = 0
   let match: RegExpExecArray | null
 
@@ -25,7 +25,11 @@ export function tokenizeText(input: string): Token[] {
       tokens.push({ text: input.slice(last, match.index), type: 'plain' })
     }
     const raw = match[0]
-    tokens.push({ text: raw, type: raw.startsWith('#') ? 'action' : 'mention' })
+    let type: Token['type'] = 'plain'
+    if (raw.startsWith('#')) type = 'action'
+    else if (raw.startsWith('@')) type = 'mention'
+    else if (raw.startsWith('&')) type = 'product'
+    tokens.push({ text: raw, type })
     last = match.index + raw.length
   }
 

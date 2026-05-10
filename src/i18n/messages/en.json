@@ -4,6 +4,7 @@
     "recent": "Recent",
     "customers": "Customers",
     "transactions": "Transactions",
+    "products": "Products",
     "settings": "Settings",
     "signOut": "Sign out"
   },
@@ -42,6 +43,9 @@
     "toolRefund": "Refund a past transaction",
     "toolVoid": "Void a pending transaction",
     "toolReport": "Aggregate stats for a period",
+    "toolProducts": "List all products in your catalog",
+    "toolProductAdd": "Add a product to your catalog",
+    "toolProductEdit": "Update an existing product",
     "toolCustomerAdd": "Create a new customer",
     "toolCustomerEdit": "Update an existing customer"
   }
